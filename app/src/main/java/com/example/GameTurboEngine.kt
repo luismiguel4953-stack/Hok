@@ -3,7 +3,6 @@ package com.example
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
-import android.os.Debug
 
 class GameTurboEngine(private val context: Context) {
     data class SystemStats(
@@ -27,10 +26,7 @@ class GameTurboEngine(private val context: Context) {
 
     fun applySafeBoost() {
         // Android does not grant ordinary apps permission to kill arbitrary processes.
-        // We can safely ask this process to release caches and trim its own memory.
-        Debug.flushAllocations()
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        activityManager.clearMemoryCache()
+        // The safe operation here is to release this app's own unused allocations.
         System.gc()
     }
 
@@ -38,8 +34,7 @@ class GameTurboEngine(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val thermal = context.getSystemService(Context.THERMAL_SERVICE) as? android.os.ThermalService
             thermal?.let { service ->
-                val status = service.currentThermalStatus
-                return when (status) {
+                return when (service.currentThermalStatus) {
                     android.os.PowerManager.THERMAL_STATUS_NONE -> 30f
                     android.os.PowerManager.THERMAL_STATUS_LIGHT -> 38f
                     android.os.PowerManager.THERMAL_STATUS_MODERATE -> 45f
