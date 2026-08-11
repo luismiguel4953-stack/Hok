@@ -1,0 +1,6 @@
+{
+  "name": "Game Turbo",
+  "description": "Advanced gaming performance booster, system tuner, HUD overlays, game library manager and hardware telemetry for Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
