@@ -3,15 +3,19 @@ package com.example
 import android.app.Application
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
+import com.example.data.entity.BoostLogEntity
 import com.example.data.entity.GameEntity
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class GameTurboViewModel(app: Application) : AndroidViewModel(app) {
@@ -21,7 +25,7 @@ class GameTurboViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = GameTurboEngine(app)
 
     val games: StateFlow<List<GameEntity>> = gameDao.getAllGames()
-        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _memoryUsedPercent = MutableStateFlow(0f)
     val memoryUsedPercent: StateFlow<Float> = _memoryUsedPercent.asStateFlow()
@@ -58,8 +62,7 @@ class GameTurboViewModel(app: Application) : AndroidViewModel(app) {
 
             val existing = gameDao.getAllGames().first().associateBy { it.packageName }
             discovered.forEach { game ->
-                val old = existing[game.packageName]
-                if (old == null) gameDao.insertGame(game)
+                if (existing[game.packageName] == null) gameDao.insertGame(game)
             }
         }
     }
@@ -82,9 +85,10 @@ class GameTurboViewModel(app: Application) : AndroidViewModel(app) {
             val before = engine.readStats()
             engine.applySafeBoost()
             val after = engine.readStats()
+            val availableDelta = (after.availableMemoryMb - before.availableMemoryMb).coerceAtLeast(0L)
             boostDao.insertLog(
-                com.example.data.entity.BoostLogEntity(
-                    memoryFreedMb = ((before.availableMemoryMb - after.availableMemoryMb).coerceAtLeast(0L) / 1024 / 1024).toInt(),
+                BoostLogEntity(
+                    memoryFreedMb = (availableDelta / 1024 / 1024).toInt(),
                     temperatureBefore = before.temperatureC,
                     temperatureAfter = after.temperatureC,
                     profileApplied = "BALANCED_SAFE"
