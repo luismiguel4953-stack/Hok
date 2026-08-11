@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,14 +41,18 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.entity.GameEntity
@@ -86,6 +93,20 @@ private fun GameTurboApp(
     val temperature by viewModel.temperature.collectAsStateWithLifecycle()
     val message by viewModel.boostMessage.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
+    var showWelcome by remember { mutableStateOf(true) }
+
+    if (showWelcome) {
+        AlertDialog(
+            onDismissRequest = { showWelcome = false },
+            icon = { Image(painterResource(com.example.R.drawable.hok_logo), "Logo HOK", Modifier.size(96.dp)) },
+            title = { Text("Bienvenido a HOK", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("HOK Game Turbo ayuda a organizar tus juegos, consultar el estado del dispositivo y mostrar un HUD de rendimiento.\n\nADVERTENCIA: HOK no obtiene acceso ilimitado al teléfono. Los permisos especiales son controlados por Android y deben ser autorizados por ti desde Ajustes. HOK no puede garantizar aumentos de FPS ni modificar CPU/GPU con privilegios que Android no concede.")
+            },
+            confirmButton = { Button(onClick = { showWelcome = false }) { Text("ENTRAR A HOK") } },
+            dismissButton = { TextButton(onClick = { showWelcome = false }) { Text("Ahora no") } }
+        )
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("HOK • Game Turbo") }) },
@@ -108,6 +129,13 @@ private fun GameTurboApp(
 @Composable
 private fun GamesScreen(padding: PaddingValues, games: List<GameEntity>, onLaunch: (GameEntity) -> Unit, onFavorite: (GameEntity) -> Unit) {
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Image(painterResource(com.example.R.drawable.hok_logo), "HOK", Modifier.size(112.dp))
+                Text("HOK", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
+                Text("GAME TURBO", color = MaterialTheme.colorScheme.primary)
+            }
+        }
         item { Text("Biblioteca", style = MaterialTheme.typography.headlineMedium) }
         item { Text("Juegos detectados en este dispositivo", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (games.isEmpty()) item { Text("No se encontraron juegos todavía.") }
