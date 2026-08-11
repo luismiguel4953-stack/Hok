@@ -62,6 +62,8 @@ class MainActivity : ComponentActivity() {
                 GameTurboApp(viewModel) {
                     if (!Settings.canDrawOverlays(this)) {
                         startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                    } else {
+                        startService(Intent(this, PerformanceHudService::class.java))
                     }
                 }
             }
@@ -99,11 +101,7 @@ private fun GameTurboApp(viewModel: GameTurboViewModel, onOverlaySettings: () ->
 
 @Composable
 private fun GamesScreen(padding: PaddingValues, games: List<GameEntity>, onLaunch: (GameEntity) -> Unit, onFavorite: (GameEntity) -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(padding),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("Biblioteca", style = MaterialTheme.typography.headlineMedium) }
         item { Text("Juegos detectados en este dispositivo", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         if (games.isEmpty()) item { Text("No se encontraron juegos todavía.") }
@@ -134,7 +132,7 @@ private fun TurboScreen(padding: PaddingValues, memory: Float, temperature: Floa
             Text("Temperatura: ${"%.1f".format(temperature)} °C")
         } }
         Button(onClick = onBoost, modifier = Modifier.fillMaxWidth().height(54.dp)) { Icon(Icons.Default.Bolt, null); Spacer(Modifier.width(8.dp)); Text("ACTIVAR TURBO") }
-        Button(onClick = onOverlay, modifier = Modifier.fillMaxWidth()) { Text("Configurar HUD flotante") }
+        Button(onClick = onOverlay, modifier = Modifier.fillMaxWidth()) { Text("ACTIVAR HUD FLOTANTE") }
         if (message.isNotBlank()) Text(message, color = MaterialTheme.colorScheme.tertiary)
         Text("Android limita el control de procesos de otras apps. HOK mide recursos y optimiza su propio estado sin prometer cambios de rendimiento que el sistema no permite.", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -147,9 +145,9 @@ private fun SettingsScreen(padding: PaddingValues, onOverlay: () -> Unit) {
         Surface(Modifier.fillMaxWidth(), tonalElevation = 2.dp) { Column(Modifier.padding(16.dp)) {
             Text("HUD de rendimiento", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(6.dp))
-            Text("Permite mostrar un panel flotante sobre los juegos.")
+            Text("Muestra RAM y estado térmico sobre otras aplicaciones.")
             Spacer(Modifier.height(10.dp))
-            Button(onClick = onOverlay) { Text("Conceder permiso de superposición") }
+            Button(onClick = onOverlay) { Text("Activar HUD") }
         } }
     }
 }
