@@ -3,6 +3,7 @@ package com.example
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
 
 class GameTurboEngine(private val context: Context) {
     data class SystemStats(
@@ -19,31 +20,29 @@ class GameTurboEngine(private val context: Context) {
         val used = (total - memoryInfo.availMem).coerceAtLeast(0L)
         return SystemStats(
             memoryUsedPercent = used.toFloat() / total.toFloat(),
-            availableMemoryMb = memoryInfo.availMem,
-            temperatureC = readThermalTemperature()
+            availableMemoryMb = memoryInfo.availMem / (1024L * 1024L),
+            temperatureC = readThermalStatusAsTemperature()
         )
     }
 
     fun applySafeBoost() {
-        // Android does not grant ordinary apps permission to kill arbitrary processes.
-        // The safe operation here is to release this app's own unused allocations.
+        // A normal Android app cannot kill arbitrary processes.
+        // Reclaim only memory belonging to this app.
         System.gc()
     }
 
-    private fun readThermalTemperature(): Float {
+    private fun readThermalStatusAsTemperature(): Float {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val thermal = context.getSystemService(Context.THERMAL_SERVICE) as? android.os.ThermalService
-            thermal?.let { service ->
-                return when (service.currentThermalStatus) {
-                    android.os.PowerManager.THERMAL_STATUS_NONE -> 30f
-                    android.os.PowerManager.THERMAL_STATUS_LIGHT -> 38f
-                    android.os.PowerManager.THERMAL_STATUS_MODERATE -> 45f
-                    android.os.PowerManager.THERMAL_STATUS_SEVERE -> 52f
-                    android.os.PowerManager.THERMAL_STATUS_CRITICAL -> 58f
-                    android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> 65f
-                    android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> 70f
-                    else -> 35f
-                }
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            return when (powerManager?.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_NONE -> 30f
+                PowerManager.THERMAL_STATUS_LIGHT -> 38f
+                PowerManager.THERMAL_STATUS_MODERATE -> 45f
+                PowerManager.THERMAL_STATUS_SEVERE -> 52f
+                PowerManager.THERMAL_STATUS_CRITICAL -> 58f
+                PowerManager.THERMAL_STATUS_EMERGENCY -> 65f
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> 70f
+                else -> 35f
             }
         }
         return 35f
