@@ -59,22 +59,28 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GameTurboTheme {
-                GameTurboApp(viewModel) {
-                    if (!Settings.canDrawOverlays(this)) {
-                        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
-                    } else {
-                        startService(Intent(this, PerformanceHudService::class.java))
-                    }
-                }
+                GameTurboApp(viewModel, ::openOverlaySettings, ::openUsageAccessSettings)
             }
         }
         viewModel.refreshSystemStats()
         viewModel.discoverGames()
     }
+
+    private fun openOverlaySettings() {
+        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+    }
+
+    private fun openUsageAccessSettings() {
+        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+    }
 }
 
 @Composable
-private fun GameTurboApp(viewModel: GameTurboViewModel, onOverlaySettings: () -> Unit) {
+private fun GameTurboApp(
+    viewModel: GameTurboViewModel,
+    onOverlaySettings: () -> Unit,
+    onUsageAccessSettings: () -> Unit
+) {
     val games by viewModel.games.collectAsStateWithLifecycle()
     val memory by viewModel.memoryUsedPercent.collectAsStateWithLifecycle()
     val temperature by viewModel.temperature.collectAsStateWithLifecycle()
@@ -94,7 +100,7 @@ private fun GameTurboApp(viewModel: GameTurboViewModel, onOverlaySettings: () ->
         when (tab) {
             0 -> GamesScreen(padding, games, viewModel::launchGame, viewModel::toggleFavorite)
             1 -> TurboScreen(padding, memory, temperature, message, viewModel::boost, onOverlaySettings)
-            else -> SettingsScreen(padding, onOverlaySettings)
+            else -> SettingsScreen(padding, onOverlaySettings, onUsageAccessSettings)
         }
     }
 }
@@ -134,20 +140,29 @@ private fun TurboScreen(padding: PaddingValues, memory: Float, temperature: Floa
         Button(onClick = onBoost, modifier = Modifier.fillMaxWidth().height(54.dp)) { Icon(Icons.Default.Bolt, null); Spacer(Modifier.width(8.dp)); Text("ACTIVAR TURBO") }
         Button(onClick = onOverlay, modifier = Modifier.fillMaxWidth()) { Text("ACTIVAR HUD FLOTANTE") }
         if (message.isNotBlank()) Text(message, color = MaterialTheme.colorScheme.tertiary)
-        Text("Android limita el control de procesos de otras apps. HOK mide recursos y optimiza su propio estado sin prometer cambios de rendimiento que el sistema no permite.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("HOK usa únicamente capacidades permitidas por Android; no mata procesos ajenos ni modifica CPU/GPU de forma privilegiada.", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun SettingsScreen(padding: PaddingValues, onOverlay: () -> Unit) {
+private fun SettingsScreen(padding: PaddingValues, onOverlay: () -> Unit, onUsageAccess: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Ajustes", style = MaterialTheme.typography.headlineMedium)
+        Text("Ajustes y permisos", style = MaterialTheme.typography.headlineMedium)
+        Text("Concede a HOK los accesos especiales necesarios desde los ajustes oficiales de Android.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Surface(Modifier.fillMaxWidth(), tonalElevation = 2.dp) { Column(Modifier.padding(16.dp)) {
-            Text("HUD de rendimiento", style = MaterialTheme.typography.titleMedium)
+            Text("HUD flotante", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(6.dp))
-            Text("Muestra RAM y estado térmico sobre otras aplicaciones.")
+            Text("Permite mostrar RAM y estado térmico sobre los juegos.")
             Spacer(Modifier.height(10.dp))
-            Button(onClick = onOverlay) { Text("Activar HUD") }
+            Button(onClick = onOverlay) { Text("Abrir permiso de superposición") }
         } }
+        Surface(Modifier.fillMaxWidth(), tonalElevation = 2.dp) { Column(Modifier.padding(16.dp)) {
+            Text("Acceso de uso", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(6.dp))
+            Text("Permite consultar estadísticas de uso cuando Android las ponga a disposición.")
+            Spacer(Modifier.height(10.dp))
+            Button(onClick = onUsageAccess) { Text("Abrir acceso de uso") }
+        } }
+        Text("HOK no puede concederse permisos especiales por sí misma. Android muestra y controla estas autorizaciones en Ajustes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
